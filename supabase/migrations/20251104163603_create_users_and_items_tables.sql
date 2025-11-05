@@ -69,6 +69,11 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for users table
+CREATE POLICY "Public can create users"
+  ON users FOR INSERT
+  TO public
+  WITH CHECK (true);
+
 CREATE POLICY "Users can read own data"
   ON users FOR SELECT
   TO authenticated

@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+
+async function getUser(cookieStore: ReturnType<typeof cookies>) {
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user;
+}
 
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = cookies();
-    const userId = cookieStore.get('auth_user_id')?.value;
+    const user = await getUser(cookieStore);
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const supabase = createServerComponentClient({ cookies: () => cookieStore });
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -25,7 +29,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('items')
       .select('*', { count: 'exact' })
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (search) {
@@ -59,13 +63,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = cookies();
-    const userId = cookieStore.get('auth_user_id')?.value;
+    const user = await getUser(cookieStore);
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -78,30 +79,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (quantity < 0) {
+    const numQuantity = Number(quantity);
+    const numPrice = Number(price);
+
+    if (isNaN(numQuantity) || numQuantity < 0) {
       return NextResponse.json(
-        { error: 'Quantity tidak boleh negatif' },
+        { error: 'Quantity harus angka dan tidak boleh negatif' },
         { status: 400 }
       );
     }
 
-    if (price < 0) {
+    if (isNaN(numPrice) || numPrice < 0) {
       return NextResponse.json(
-        { error: 'Price tidak boleh negatif' },
+        { error: 'Price harus angka dan tidak boleh negatif' },
         { status: 400 }
       );
     }
 
+    const supabase = createServerComponentClient({ cookies: () => cookieStore });
     const { data, error } = await supabase
       .from('items')
       .insert([{
         name,
         sku,
-        quantity: parseInt(quantity),
-        price: parseFloat(price),
+        quantity: numQuantity,
+        price: numPrice,
         description: description || null,
         category: category || null,
-        user_id: userId,
+        user_id: user.id,
       }])
       .select()
       .single();

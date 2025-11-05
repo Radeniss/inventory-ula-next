@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+// Impor Next.js spesifik (useRouter, Link) dihapus karena menyebabkan error resolve di lingkungan ini.
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +10,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Package } from 'lucide-react';
 
 export default function RegisterPage() {
-  const router = useRouter();
+  // const router = useRouter(); // Dihapus
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState(''); // State untuk Email
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +38,8 @@ export default function RegisterPage() {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        // Mengirim email, username, dan password ke API
+        body: JSON.stringify({ username, email, password }), 
       });
 
       const data = await response.json();
@@ -47,7 +48,8 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Registrasi gagal');
       }
 
-      router.push('/login?registered=true');
+      // Mengganti router.push dengan pengalihan standar menggunakan window.location.href
+      window.location.href = '/login?registered=true';
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -76,6 +78,7 @@ export default function RegisterPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+            {/* Input Username */}
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <Input
@@ -89,6 +92,23 @@ export default function RegisterPage() {
                 autoComplete="username"
               />
             </div>
+            
+            {/* Input Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Masukkan alamat email Anda"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+                autoComplete="email"
+              />
+            </div>
+            
+            {/* Input Password */}
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -102,6 +122,7 @@ export default function RegisterPage() {
                 autoComplete="new-password"
               />
             </div>
+            {/* Input Konfirmasi Password */}
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Konfirmasi Password</Label>
               <Input
@@ -129,9 +150,10 @@ export default function RegisterPage() {
             </Button>
             <p className="text-sm text-center text-muted-foreground">
               Sudah punya akun?{' '}
-              <Link href="/login" className="text-primary hover:underline font-medium">
+              {/* Mengganti komponen <Link> dengan tag <a> standar */}
+              <a href="/login" className="text-primary hover:underline font-medium">
                 Login di sini
-              </Link>
+              </a>
             </p>
           </CardFooter>
         </form>
