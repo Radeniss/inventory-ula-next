@@ -1,39 +1,34 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
 model User {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         Int       @id @default(autoincrement())
   username   String    @unique
+  email      String    @unique
   password   String
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @default(now())
   items      Item[]
 }
 
 model Item {
   id          Int       @id @default(autoincrement())
-  name        String    @db.VarChar(255)
-  sku         String    @unique @db.VarChar(50)
+  name        String
+  sku         String    @unique
   quantity    Int       @default(0)
-  price       Decimal   @db.Decimal(10, 2)
+  price       Decimal
   description String?
-  category    String?   @db.VarChar(100)
-  user_id     String    @db.Uuid
-  created_at  DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime? @default(now()) @db.Timestamptz(6)
-  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  category    String?
+  userId      Int
+  createdAt   DateTime? @default(now())
+  updatedAt   DateTime? @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([user_id])
+  @@index([userId])
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }

@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Plus } from 'lucide-react';
-import { Item } from '@/lib/supabase';
+import { Item } from '@prisma/client';
 
 interface ItemFormProps {
   item?: Item;

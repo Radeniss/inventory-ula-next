@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ItemForm } from '@/components/item-form';
 import { ItemsTable } from '@/components/items-table';
 import { Loader2, LogOut, Package, Search, RefreshCw } from 'lucide-react';
-import { Item } from '@/lib/supabase';
+import { Item } from '@prisma/client';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -47,7 +47,7 @@ export default function DashboardPage() {
       setFilteredItems(data.items);
 
       const total = data.items.length;
-      const totalValue = data.items.reduce((sum: number, item: Item) => sum + (item.price * item.quantity), 0);
+      const totalValue = data.items.reduce((sum: number, item: Item) => sum + (Number(item.price) * item.quantity), 0);
       const lowStock = data.items.filter((item: Item) => item.quantity < 10).length;
 
       setStats({ total, totalValue, lowStock });

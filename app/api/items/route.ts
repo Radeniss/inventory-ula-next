@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
 
-async function getUser(cookieStore: ReturnType<typeof cookies>) {
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user;
+const prisma = new PrismaClient();
+
+async function getUserId(cookieStore: ReturnType<typeof cookies>): Promise<number | null> {
+  const authCookie = cookieStore.get('auth_user_id');
+  return authCookie ? Number(authCookie.value) : null;
 }
 
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = cookies();
-    const user = await getUser(cookieStore);
+    const userId = await getUserId(cookieStore);
 
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -26,31 +26,37 @@ export async function GET(request: NextRequest) {
 
     const offset = (page - 1) * limit;
 
-    let query = supabase
-      .from('items')
-      .select('*', { count: 'exact' })
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    const where: any = {
+      userId: userId,
+    };
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`);
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     if (category) {
-      query = query.eq('category', category);
+      where.category = category;
     }
 
-    query = query.range(offset, offset + limit - 1);
+    const items = await prisma.item.findMany({
+      where,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip: offset,
+      take: limit,
+    });
 
-    const { data, error, count } = await query;
-
-    if (error) throw error;
+    const total = await prisma.item.count({ where });
 
     return NextResponse.json({
-      items: data,
-      total: count,
+      items,
+      total,
       page,
-      totalPages: Math.ceil((count || 0) / limit),
+      totalPages: Math.ceil(total / limit),
     });
   } catch (error: any) {
     return NextResponse.json(
@@ -63,9 +69,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = cookies();
-    const user = await getUser(cookieStore);
+    const userId = await getUserId(cookieStore);
 
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -96,33 +102,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
-    const { data, error } = await supabase
-      .from('items')
-      .insert([{
+    const item = await prisma.item.create({
+      data: {
         name,
         sku,
         quantity: numQuantity,
         price: numPrice,
         description: description || null,
         category: category || null,
-        user_id: user.id,
-      }])
-      .select()
-      .single();
+        userId: userId,
+      },
+    });
 
-    if (error) {
-      if (error.code === '23505') {
-        return NextResponse.json(
-          { error: 'SKU sudah ada' },
-          { status: 409 }
-        );
-      }
-      throw error;
-    }
-
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json(item, { status: 201 });
   } catch (error: any) {
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'SKU sudah ada' },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { error: 'Gagal menambahkan item' },
       { status: 500 }

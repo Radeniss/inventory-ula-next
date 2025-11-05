@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Edit, Trash2, Package } from 'lucide-react';
-import { Item } from '@/lib/supabase';
+import { Item } from '@prisma/client';
 
 interface ItemsTableProps {
   items: Item[];
@@ -31,7 +31,7 @@ export function ItemsTable({ items, onEdit, onDelete }: ItemsTableProps) {
     }).format(price);
   };
 
-  const formatDate = (date: string) => {
+  const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('id-ID', {
       day: '2-digit',
       month: 'short',
@@ -88,7 +88,7 @@ export function ItemsTable({ items, onEdit, onDelete }: ItemsTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right font-medium">
-                  {formatPrice(item.price)}
+                  {formatPrice(Number(item.price))}
                 </TableCell>
                 <TableCell>
                   {item.category ? (
@@ -98,7 +98,7 @@ export function ItemsTable({ items, onEdit, onDelete }: ItemsTableProps) {
                   )}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {formatDate(item.created_at)}
+                  {item.createdAt ? formatDate(item.createdAt) : '-'}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-2 justify-end">

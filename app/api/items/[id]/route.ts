@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
+
+const prisma = new PrismaClient();
+
+async function getUserId(cookieStore: ReturnType<typeof cookies>): Promise<number | null> {
+  const authCookie = cookieStore.get('auth_user_id');
+  return authCookie ? Number(authCookie.value) : null;
+}
 
 export async function GET(
   request: NextRequest,
@@ -8,32 +15,27 @@ export async function GET(
 ) {
   try {
     const cookieStore = cookies();
-    const userId = cookieStore.get('auth_user_id')?.value;
+    const userId = await getUserId(cookieStore);
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data, error } = await supabase
-      .from('items')
-      .select('*')
-      .eq('id', params.id)
-      .eq('user_id', userId)
-      .maybeSingle();
+    const item = await prisma.item.findUnique({
+      where: {
+        id: Number(params.id),
+        userId: userId,
+      },
+    });
 
-    if (error) throw error;
-
-    if (!data) {
+    if (!item) {
       return NextResponse.json(
         { error: 'Item tidak ditemukan' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(item);
   } catch (error: any) {
     return NextResponse.json(
       { error: 'Gagal mengambil data item' },
@@ -48,13 +50,10 @@ export async function PUT(
 ) {
   try {
     const cookieStore = cookies();
-    const userId = cookieStore.get('auth_user_id')?.value;
+    const userId = await getUserId(cookieStore);
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -67,54 +66,52 @@ export async function PUT(
       );
     }
 
-    if (quantity < 0) {
+    const numQuantity = Number(quantity);
+    const numPrice = Number(price);
+
+    if (isNaN(numQuantity) || numQuantity < 0) {
       return NextResponse.json(
-        { error: 'Quantity tidak boleh negatif' },
+        { error: 'Quantity harus angka dan tidak boleh negatif' },
         { status: 400 }
       );
     }
 
-    if (price < 0) {
+    if (isNaN(numPrice) || numPrice < 0) {
       return NextResponse.json(
-        { error: 'Price tidak boleh negatif' },
+        { error: 'Price harus angka dan tidak boleh negatif' },
         { status: 400 }
       );
     }
 
-    const { data, error } = await supabase
-      .from('items')
-      .update({
+    const item = await prisma.item.update({
+      where: {
+        id: Number(params.id),
+        userId: userId,
+      },
+      data: {
         name,
         sku,
-        quantity: parseInt(quantity),
-        price: parseFloat(price),
+        quantity: numQuantity,
+        price: numPrice,
         description: description || null,
         category: category || null,
-      })
-      .eq('id', params.id)
-      .eq('user_id', userId)
-      .select()
-      .maybeSingle();
+      },
+    });
 
-    if (error) {
-      if (error.code === '23505') {
-        return NextResponse.json(
-          { error: 'SKU sudah ada' },
-          { status: 409 }
-        );
-      }
-      throw error;
+    return NextResponse.json(item);
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'SKU sudah ada' },
+        { status: 409 }
+      );
     }
-
-    if (!data) {
+    if (error.code === 'P2025') {
       return NextResponse.json(
         { error: 'Item tidak ditemukan' },
         { status: 404 }
       );
     }
-
-    return NextResponse.json(data);
-  } catch (error: any) {
     return NextResponse.json(
       { error: 'Gagal memperbarui item' },
       { status: 500 }
@@ -128,25 +125,27 @@ export async function DELETE(
 ) {
   try {
     const cookieStore = cookies();
-    const userId = cookieStore.get('auth_user_id')?.value;
+    const userId = await getUserId(cookieStore);
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { error } = await supabase
-      .from('items')
-      .delete()
-      .eq('id', params.id)
-      .eq('user_id', userId);
-
-    if (error) throw error;
+    await prisma.item.delete({
+      where: {
+        id: Number(params.id),
+        userId: userId,
+      },
+    });
 
     return NextResponse.json({ message: 'Item berhasil dihapus' });
   } catch (error: any) {
+    if (error.code === 'P2025') {
+      return NextResponse.json(
+        { error: 'Item tidak ditemukan' },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
       { error: 'Gagal menghapus item' },
       { status: 500 }
