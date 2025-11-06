@@ -8,10 +8,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Plus } from 'lucide-react';
-import { Item } from '@prisma/client';
+
+type ItemRow = {
+  id: number;
+  name: string;
+  sku: string;
+  quantity: number;
+  price: number;            // kirim sebagai number/string dari server
+  description?: string | null;
+  category?: string | null;
+  createdAt?: string;       // kirim ISO string dari server
+  updatedAt?: string;
+};
 
 interface ItemFormProps {
-  item?: Item;
+  item?: ItemRow;
   onSuccess: () => void;
   onCancel?: () => void;
 }

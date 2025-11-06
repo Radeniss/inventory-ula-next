@@ -6,11 +6,22 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Edit, Trash2, Package } from 'lucide-react';
-import { Item } from '@prisma/client';
+
+type ItemRow = {
+  id: number;
+  name: string;
+  sku: string;
+  quantity: number;
+  price: number;            // kirim sebagai number/string dari server
+  description?: string | null;
+  category?: string | null;
+  createdAt?: string;       // kirim ISO string dari server
+  updatedAt?: string;
+};
 
 interface ItemsTableProps {
-  items: Item[];
-  onEdit: (item: Item) => void;
+  items: ItemRow[];
+  onEdit: (item: ItemRow) => void;
   onDelete: (id: number) => void;
 }
 
@@ -31,7 +42,7 @@ export function ItemsTable({ items, onEdit, onDelete }: ItemsTableProps) {
     }).format(price);
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('id-ID', {
       day: '2-digit',
       month: 'short',
