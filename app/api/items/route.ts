@@ -4,6 +4,18 @@ import { cookies } from 'next/headers';
 
 const prisma = new PrismaClient();
 
+type ItemRow = {
+  id: number;
+  name: string;
+  sku: string;
+  quantity: number;
+  price: number;            // kirim sebagai number/string dari server
+  description?: string | null;
+  category?: string | null;
+  createdAt?: string;       // kirim ISO string dari server
+  updatedAt?: string;
+};
+
 async function getUserId(cookieStore: ReturnType<typeof cookies>): Promise<number | null> {
   const authCookie = cookieStore.get('auth_user_id');
   return authCookie ? Number(authCookie.value) : null;
@@ -52,8 +64,20 @@ export async function GET(request: NextRequest) {
 
     const total = await prisma.item.count({ where });
 
+    const safeItems: ItemRow[] = items.map(i => ({
+      id: i.id,
+      name: i.name,
+      sku: i.sku,
+      quantity: i.quantity,
+      price: Number(i.price),                 // Decimal -> number
+      description: i.description ?? null,
+      category: i.category ?? null,
+      createdAt: i.createdAt?.toISOString(),
+      updatedAt: i.updatedAt?.toISOString(),
+    }));
+
     return NextResponse.json({
-      items,
+      items: safeItems,
       total,
       page,
       totalPages: Math.ceil(total / limit),

@@ -10,16 +10,27 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ItemForm } from '@/components/item-form';
 import { ItemsTable } from '@/components/items-table';
 import { Loader2, LogOut, Package, Search, RefreshCw } from 'lucide-react';
-import { Prisma } from '@prisma/client';
+
+type ItemRow = {
+  id: number;
+  name: string;
+  sku: string;
+  quantity: number;
+  price: number;            // kirim sebagai number/string dari server
+  description?: string | null;
+  category?: string | null;
+  createdAt?: string;       // kirim ISO string dari server
+  updatedAt?: string;
+};
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [items, setItems] = useState<Prisma.Item[]>([]);
-  const [filteredItems, setFilteredItems] = useState<Prisma.Item[]>([]);
+  const [items, setItems] = useState<ItemRow[]>([]);
+  const [filteredItems, setFilteredItems] = useState<ItemRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [editingItem, setEditingItem] = useState<Prisma.Item | undefined>(undefined);
+  const [editingItem, setEditingItem] = useState<ItemRow | undefined>(undefined);
   const [activeTab, setActiveTab] = useState('list');
   const [stats, setStats] = useState({
     total: 0,
@@ -47,8 +58,8 @@ export default function DashboardPage() {
       setFilteredItems(data.items);
 
       const total = data.items.length;
-      const totalValue = data.items.reduce((sum: number, item: Prisma.Item) => sum + (Number(item.price) * item.quantity), 0);
-      const lowStock = data.items.filter((item: Prisma.Item) => item.quantity < 10).length;
+      const totalValue = data.items.reduce((sum: number, item: ItemRow) => sum + (Number(item.price) * item.quantity), 0);
+      const lowStock = data.items.filter((item: ItemRow) => item.quantity < 10).length;
 
       setStats({ total, totalValue, lowStock });
     } catch (err: any) {
@@ -94,7 +105,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleEdit = (item: Prisma.Item) => {
+  const handleEdit = (item: ItemRow) => {
     setEditingItem(item);
     setActiveTab('form');
   };
@@ -173,7 +184,7 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardDescription>Stok Rendah (&lt;10)</CardDescription>
+              <CardDescription>Stok Rendah (<10)</CardDescription>
               <CardTitle className="text-3xl text-destructive">{stats.lowStock}</CardTitle>
             </CardHeader>
           </Card>
