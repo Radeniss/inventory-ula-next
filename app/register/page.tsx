@@ -10,9 +10,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Package } from 'lucide-react';
 
 export default function RegisterPage() {
-  // const router = useRouter(); // Dihapus
+
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState(''); // State untuk Email
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
