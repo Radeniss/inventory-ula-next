@@ -10,16 +10,16 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ItemForm } from '@/components/item-form';
 import { ItemsTable } from '@/components/items-table';
 import { Loader2, LogOut, Package, Search, RefreshCw } from 'lucide-react';
-import { Item } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [items, setItems] = useState<Item[]>([]);
-  const [filteredItems, setFilteredItems] = useState<Item[]>([]);
+  const [items, setItems] = useState<Prisma.Item[]>([]);
+  const [filteredItems, setFilteredItems] = useState<Prisma.Item[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [editingItem, setEditingItem] = useState<Item | undefined>(undefined);
+  const [editingItem, setEditingItem] = useState<Prisma.Item | undefined>(undefined);
   const [activeTab, setActiveTab] = useState('list');
   const [stats, setStats] = useState({
     total: 0,
@@ -47,8 +47,8 @@ export default function DashboardPage() {
       setFilteredItems(data.items);
 
       const total = data.items.length;
-      const totalValue = data.items.reduce((sum: number, item: Item) => sum + (Number(item.price) * item.quantity), 0);
-      const lowStock = data.items.filter((item: Item) => item.quantity < 10).length;
+      const totalValue = data.items.reduce((sum: number, item: Prisma.Item) => sum + (Number(item.price) * item.quantity), 0);
+      const lowStock = data.items.filter((item: Prisma.Item) => item.quantity < 10).length;
 
       setStats({ total, totalValue, lowStock });
     } catch (err: any) {
@@ -94,7 +94,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleEdit = (item: Item) => {
+  const handleEdit = (item: Prisma.Item) => {
     setEditingItem(item);
     setActiveTab('form');
   };
